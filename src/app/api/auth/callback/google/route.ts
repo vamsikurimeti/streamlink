@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
         tokens: tokens,
     });
 
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL('/dashboard?success=true', request.url));
   } catch (err: any) {
     console.error('Failed to exchange auth code for tokens:', err.message);
     return NextResponse.redirect(new URL('/login?error=token_exchange_failed', request.url));

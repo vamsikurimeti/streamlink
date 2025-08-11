@@ -1,10 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getVideoHistory } from '@/lib/actions/youtube';
 import VideoCard from './video-card';
-import { History } from 'lucide-react';
+import { History, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default async function VideoHistory() {
-  const videos = await getVideoHistory();
+  let videos = [];
+  let error: string | null = null;
+
+  try {
+    videos = await getVideoHistory();
+  } catch (e: any) {
+    error = e.message || 'An unexpected error occurred.';
+  }
 
   return (
     <Card className="shadow-md">
@@ -16,7 +24,13 @@ export default async function VideoHistory() {
         <CardDescription>A list of your previously streamed videos on YouTube.</CardDescription>
       </CardHeader>
       <CardContent>
-        {videos.length > 0 ? (
+        {error ? (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error Fetching Videos</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        ) : videos.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {videos.map((video) => (
               <VideoCard key={video.id} video={video} />

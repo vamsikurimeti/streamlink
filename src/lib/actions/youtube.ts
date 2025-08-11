@@ -39,7 +39,7 @@ export async function goLive(): Promise<{ streamUrl?: string; error?: string }> 
     return { error: 'Authentication required. Please log in.' };
   }
   
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.YOUTUBE_API_KEY) {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
     console.error("YouTube API credentials are not set in .env file.");
     return { error: 'Server configuration error: YouTube API credentials are not set up.' };
   }
@@ -109,7 +109,9 @@ export async function goLive(): Promise<{ streamUrl?: string; error?: string }> 
 
   } catch (err: any) {
     console.error('Error creating YouTube live stream:', err.message);
-    // This generic error is returned because a full OAuth flow is needed for real requests.
+    if (err.message && err.message.includes('invalid_grant')) {
+        return { error: 'Authentication with Google failed. Please re-authenticate to grant access to YouTube.' };
+    }
     return { error: 'Failed to start live stream. Please ensure you have completed the OAuth2 authentication with YouTube.' };
   }
 }
@@ -144,8 +146,12 @@ export async function getVideoHistory(): Promise<Video[]> {
 
   } catch (err: any) {
       console.error('Error fetching video history:', err.message);
-      // Return mock data on failure since the OAuth flow isn't implemented.
-      // This prevents the UI from breaking while you set up authentication.
+      // We are throwing an error here instead of returning mock data so the UI can show a proper message.
+      if (err.message && err.message.includes('invalid_grant')) {
+        throw new Error('Authentication with Google failed. Please re-authenticate to grant access to YouTube.');
+      }
+      // Return mock data on other failures to prevent the UI from breaking
+      // while you set up authentication.
       return [
         {
           id: '1',

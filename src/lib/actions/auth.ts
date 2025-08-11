@@ -6,7 +6,6 @@ import { createSession, deleteSession } from '@/lib/auth';
 import { google } from 'googleapis';
 import { db } from '@/lib/firebase';
 import bcrypt from 'bcrypt';
-import {-collection, query, where, getDocs, addDoc} from 'firebase/firestore'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),

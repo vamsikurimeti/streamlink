@@ -6,9 +6,6 @@ import { createSession, deleteSession } from '@/lib/auth';
 import { google } from 'googleapis';
 import { db } from '@/lib/firebase';
 import bcrypt from 'bcrypt';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),

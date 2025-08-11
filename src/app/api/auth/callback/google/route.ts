@@ -3,9 +3,6 @@ import type { NextRequest } from 'next/server';
 import { google } from 'googleapis';
 import { createSession } from '@/lib/auth';
 import { db } from '@/lib/firebase';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { logout } from '@/lib/actions/auth';
 import { LogOut } from 'lucide-react';
+import type { Session } from '@/lib/auth';
 
 function BrandIcon() {
     return (
@@ -35,8 +36,8 @@ function BrandIcon() {
     );
   }
 
-export default function Header({ user }: { user: { email: string } }) {
-  const userInitials = user.email.slice(0, 2).toUpperCase();
+export default function Header({ user }: { user: Session }) {
+  const userInitials = user.email ? user.email.slice(0, 2).toUpperCase() : 'U';
 
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 z-50">

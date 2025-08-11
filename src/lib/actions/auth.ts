@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { createSession, deleteSession } from '@/lib/auth';
+import { google } from 'googleapis';
 
 // MOCK database of users
 const users = [
@@ -39,7 +40,7 @@ export async function login(prevState: any, formData: FormData) {
     };
   }
 
-  await createSession(user.id, user.email);
+  await createSession({ userId: user.id, email: user.email });
   redirect('/dashboard');
 }
 
@@ -65,7 +66,7 @@ export async function register(prevState: any, formData: FormData) {
   const newUser = { id: String(users.length + 1), email, password };
   users.push(newUser);
 
-  await createSession(newUser.id, newUser.email);
+  await createSession({ userId: newUser.id, email: newUser.email });
   redirect('/dashboard');
 }
 
@@ -75,10 +76,29 @@ export async function logout() {
 }
 
 export async function signInWithGoogle() {
-    // MOCK: In a real app, this would redirect to Google's OAuth consent screen
-    // After consent, Google would redirect back to a callback URL in our app.
-    // The callback would verify the user and create a session.
-    // For this mock, we'll just create a session for a mock Google user.
-    await createSession('google-user-1', 'google.user@example.com');
-    redirect('/dashboard');
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error("Google OAuth credentials are not set in .env file.");
+    throw new Error('Server configuration error: Google OAuth credentials are not set up.');
+  }
+
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.NEXT_PUBLIC_URL ? `${process.env.NEXT_PUBLIC_URL}/api/auth/callback/google` : 'http://localhost:9002/api/auth/callback/google'
+  );
+
+  const scopes = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/youtube',
+    'https://www.googleapis.com/auth/youtube.readonly',
+  ];
+
+  const url = oauth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: scopes,
+    prompt: 'consent',
+  });
+
+  redirect(url);
 }

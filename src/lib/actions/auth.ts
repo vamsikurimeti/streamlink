@@ -55,7 +55,6 @@ export async function login(prevState: any, formData: FormData) {
 
     await createSession({ userId: userDoc.id, email: user.email, picture: user.picture });
     
-
   } catch (error) {
     console.error("Login error:", error);
     return { error: { form: ['An unexpected error occurred. Please try again.'] } };
@@ -72,7 +71,7 @@ export async function register(prevState: any, formData: FormData) {
 
     if (!validatedFields.success) {
         return {
-        error: validatedFields.error.flatten().fieldErrors,
+          error: validatedFields.error.flatten().fieldErrors,
         };
     }
 

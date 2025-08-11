@@ -14,33 +14,28 @@ const clientConfig = {
 };
 
 // Initialize Firebase for the client
-const clientApp = getClientApps().length ? getClientApp() : initializeClientApp(clientConfig);
+const clientApp = !getClientApps().length ? initializeClientApp(clientConfig) : getClientApp();
 const clientDb = getClientFirestore(clientApp);
 
 
 // Server-side Firebase Admin SDK configuration
-let adminDb: ReturnType<typeof getFirestore>;
+let db: ReturnType<typeof getFirestore> | null = null;
 
 try {
     const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (!serviceAccountString) {
-        throw new Error("The GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. This is required for server-side Firebase Admin operations.");
+        console.warn("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Server-side Firebase features will be disabled.");
+    } else {
+        const serviceAccount = JSON.parse(serviceAccountString);
+        if (!getApps().length) {
+            initializeApp({
+                credential: cert(serviceAccount),
+            });
+        }
+        db = getFirestore();
     }
-    const serviceAccount = JSON.parse(serviceAccountString);
-
-    if (!getApps().length) {
-        initializeApp({
-            credential: cert(serviceAccount),
-            databaseURL: `https://${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}.firebaseio.com`
-        });
-    }
-    adminDb = getFirestore();
 } catch (error: any) {
     console.error('Firebase Admin SDK initialization error:', error.message);
-    // The app can still run on the client side, but server actions will fail.
-    // @ts-ignore
-    adminDb = null;
 }
 
-// We rename the exports to avoid conflicts and make their usage clear.
-export { clientApp, clientDb, adminDb as db };
+export { clientApp, clientDb, db };

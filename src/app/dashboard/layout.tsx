@@ -1,13 +1,34 @@
-import type { ReactNode } from 'react';
-import Header from '@/components/dashboard/header';
-import { getSession } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+'use client';
 
-export default async function DashboardLayout({ children }: { children: ReactNode }) {
-  const session = await getSession();
+import { ReactNode, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Header from '@/components/dashboard/header';
+import type { Session } from '@/lib/auth';
+import { useToast } from '@/hooks/use-toast';
+
+// This is a client-side wrapper to use hooks for session and toasts
+export default function DashboardLayoutWrapper({ children, session }: { children: ReactNode, session: Session | null }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      toast({
+        title: 'Signed in successfully!',
+        description: `Welcome back, ${session?.email || 'user'}!`,
+      });
+      // Clean up the URL
+      router.replace('/dashboard', { scroll: false });
+    }
+  }, [searchParams, toast, router, session]);
+  
   if (!session) {
-    // This is a failsafe, middleware should handle this.
-    redirect('/login');
+    // This should be caught by middleware, but as a fallback:
+    if (typeof window !== 'undefined') {
+      router.push('/login');
+    }
+    return null;
   }
 
   return (

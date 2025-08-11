@@ -17,14 +17,14 @@ export default function GoLiveCard() {
   const handleGoLive = () => {
     startTransition(async () => {
       const result = await goLive();
-      if (result.error) {
+      if (result?.error) {
         toast({
           variant: 'destructive',
           title: 'Error',
           description: result.error,
         });
         setStreamUrl(null);
-      } else if (result.streamUrl) {
+      } else if (result?.streamUrl) {
         setStreamUrl(result.streamUrl);
         toast({
           title: 'Success!',

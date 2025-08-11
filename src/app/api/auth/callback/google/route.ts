@@ -10,43 +10,41 @@ export async function GET(request: NextRequest) {
   const error = searchParams.get('error');
 
   if (error) {
-    console.error('OAuth Error:', error);
-    return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
+    console.error('OAuth Callback Error:', error);
+    return NextResponse.redirect(new URL(`/login?error=oauth_failed&message=${error}`, request.url));
   }
 
   if (!code) {
-    console.error('OAuth Error: No code found');
-    return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
+    console.error('OAuth Callback Error: No code found');
+    return NextResponse.redirect(new URL('/login?error=oauth_failed&message=No_code_found', request.url));
   }
+  
+  console.log("Received OAuth callback with authorization code.");
 
-  if (!process.env.GOOGLE_CLIENT_ID) {
-    console.error("Missing GOOGLE_CLIENT_ID in .env file.");
-    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
-  }
-  if (!process.env.GOOGLE_CLIENT_SECRET) {
-    console.error("Missing GOOGLE_CLIENT_SECRET in .env file.");
-    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
-  }
-  if (!process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
-    console.error("Missing NEXT_PUBLIC_GOOGLE_REDIRECT_URI in .env file.");
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
+    console.error("CRITICAL: Missing Google OAuth environment variables.");
     return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   
   if (!db) {
-    console.error("Firebase Admin SDK is not initialized. Check server logs for GOOGLE_APPLICATION_CREDENTIALS.");
+    console.error("CRITICAL: Firebase Admin SDK is not initialized. Check server logs for GOOGLE_APPLICATION_CREDENTIALS.");
     return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   
   try {
+    console.log("Setting up Google OAuth2 client...");
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
       process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI
     );
 
+    console.log("Exchanging authorization code for tokens...");
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);
+    console.log("Successfully received OAuth tokens.");
 
+    console.log("Fetching user info from Google...");
     const oauth2 = google.oauth2({
       auth: oauth2Client,
       version: 'v2',
@@ -55,17 +53,21 @@ export async function GET(request: NextRequest) {
     const { data: userInfo } = await oauth2.userinfo.get();
 
     if (!userInfo.email || !userInfo.id) {
+        console.error("Google user info response was missing email or id.");
         throw new Error("Failed to retrieve user information from Google.");
     }
 
+    console.log(`User info received for email: ${userInfo.email}`);
+    
     const usersRef = db.collection("users");
     const q = usersRef.where("email", "==", userInfo.email);
     const querySnapshot = await q.get();
     
     let userId: string;
-    let userPicture: string | null | undefined;
+    let userPicture: string | null | undefined = userInfo.picture;
 
     if (querySnapshot.empty) {
+        console.log("User not found in Firestore. Creating new user...");
         const newUserRef = usersRef.doc();
         const newUser = {
             email: userInfo.email,
@@ -75,29 +77,33 @@ export async function GET(request: NextRequest) {
         };
         await newUserRef.set(newUser);
         userId = newUserRef.id;
-        userPicture = newUser.picture;
+        console.log(`New user created with ID: ${userId}`);
     } else {
         const userDoc = querySnapshot.docs[0];
         userId = userDoc.id;
+        console.log(`User found in Firestore with ID: ${userId}. Updating profile.`);
         const updatedData = {
             googleId: userInfo.id,
             name: userInfo.name,
             picture: userInfo.picture,
         };
         await userDoc.ref.update(updatedData);
-        userPicture = updatedData.picture;
     }
     
+    console.log("Creating session for the user...");
     await createSession({
         userId: userId,
         email: userInfo.email,
         picture: userPicture,
-        tokens: tokens,
+        tokens: tokens, // Storing tokens is crucial for API calls
     });
+    console.log("Session created successfully.");
 
+    console.log("Redirecting to dashboard...");
     return NextResponse.redirect(new URL('/dashboard?success=true', request.url));
   } catch (err: any) {
-    console.error('Failed to exchange auth code for tokens:', err.message);
-    return NextResponse.redirect(new URL('/login?error=token_exchange_failed', request.url));
+    console.error('Failed to process Google OAuth callback:', err.message);
+    const errorMessage = err.response?.data?.error || 'token_exchange_failed';
+    return NextResponse.redirect(new URL(`/login?error=${errorMessage}`, request.url));
   }
 }

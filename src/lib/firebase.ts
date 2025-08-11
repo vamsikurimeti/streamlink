@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, getApp, cert, App } from 'firebase-admin/app';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
 import { initializeApp as initializeClientApp, getApps as getClientApps, getApp as getClientApp } from 'firebase/app';
 import { getFirestore as getClientFirestore } from 'firebase/firestore';
 
@@ -19,23 +19,29 @@ const clientDb = getClientFirestore(clientApp);
 
 
 // Server-side Firebase Admin SDK configuration
-let db: ReturnType<typeof getFirestore> | null = null;
+let adminApp: App;
+let db: Firestore | null = null;
 
 try {
     const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (!serviceAccountString) {
-        console.warn("GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Server-side Firebase features will be disabled.");
+        console.warn("WARNING: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Server-side Firebase features will be disabled.");
     } else {
         const serviceAccount = JSON.parse(serviceAccountString);
         if (!getApps().length) {
-            initializeApp({
+            console.log("Initializing Firebase Admin SDK...");
+            adminApp = initializeApp({
                 credential: cert(serviceAccount),
             });
+        } else {
+            console.log("Using existing Firebase Admin SDK app.");
+            adminApp = getApp();
         }
-        db = getFirestore();
+        db = getFirestore(adminApp);
+        console.log("Firebase Admin SDK initialized and Firestore is available.");
     }
 } catch (error: any) {
-    console.error('Firebase Admin SDK initialization error:', error.message);
+    console.error('CRITICAL: Firebase Admin SDK initialization error:', error.message);
 }
 
 export { clientApp, clientDb, db };

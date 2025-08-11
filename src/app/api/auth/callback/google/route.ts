@@ -3,8 +3,6 @@ import type { NextRequest } from 'next/server';
 import { google } from 'googleapis';
 import { createSession } from '@/lib/auth';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,8 +19,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
   }
 
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
     console.error("Google OAuth credentials are not set in .env file.");
+    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
+  }
+  
+  if (!db) {
+    console.error("Firebase Admin SDK is not initialized. Check server logs.");
     return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   
@@ -47,22 +50,29 @@ export async function GET(request: NextRequest) {
         throw new Error("Failed to retrieve user information from Google.");
     }
 
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("email", "==", userInfo.email));
-    const querySnapshot = await getDocs(q);
+    const usersRef = db.collection("users");
+    const q = usersRef.where("email", "==", userInfo.email);
+    const querySnapshot = await q.get();
     
     let userId: string;
 
     if (querySnapshot.empty) {
-        const newUserDoc = await addDoc(usersRef, {
+        const newUserRef = usersRef.doc();
+        await newUserRef.set({
             email: userInfo.email,
             googleId: userInfo.id,
             name: userInfo.name,
             picture: userInfo.picture,
         });
-        userId = newUserDoc.id;
+        userId = newUserRef.id;
     } else {
         userId = querySnapshot.docs[0].id;
+        // Optionally, update user info on re-login
+        await querySnapshot.docs[0].ref.update({
+            googleId: userInfo.id,
+            name: userInfo.name,
+            picture: userInfo.picture,
+        });
     }
     
     await createSession({

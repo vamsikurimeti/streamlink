@@ -5,8 +5,8 @@ import { redirect } from 'next/navigation';
 import { createSession, deleteSession } from '@/lib/auth';
 import { google } from 'googleapis';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import bcrypt from 'bcrypt';
+import {-collection, query, where, getDocs, addDoc} from 'firebase/firestore'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -19,6 +19,9 @@ const registerSchema = z.object({
 });
 
 export async function login(prevState: any, formData: FormData) {
+  if (!db) {
+    return { error: { form: ['Server configuration error. Please contact support.'] } };
+  }
   const validatedFields = loginSchema.safeParse(Object.fromEntries(formData.entries()));
 
   if (!validatedFields.success) {
@@ -30,9 +33,9 @@ export async function login(prevState: any, formData: FormData) {
   const { email, password } = validatedFields.data;
 
   try {
-    const usersRef = collection(db, "users");
-    const q = query(usersRef, where("email", "==", email));
-    const querySnapshot = await getDocs(q);
+    const usersRef = db.collection("users");
+    const q = usersRef.where("email", "==", email);
+    const querySnapshot = await q.get();
 
     if (querySnapshot.empty) {
       return { error: { form: ['Invalid email or password'] } };
@@ -52,15 +55,19 @@ export async function login(prevState: any, formData: FormData) {
     }
 
     await createSession({ userId: userDoc.id, email: user.email });
-    redirect('/dashboard');
+    
 
   } catch (error) {
     console.error("Login error:", error);
     return { error: { form: ['An unexpected error occurred. Please try again.'] } };
   }
+  redirect('/dashboard');
 }
 
 export async function register(prevState: any, formData: FormData) {
+    if (!db) {
+        return { error: { form: ['Server configuration error. Please contact support.'] } };
+    }
     const validatedFields = registerSchema.safeParse(Object.fromEntries(formData.entries()));
 
     if (!validatedFields.success) {
@@ -72,9 +79,9 @@ export async function register(prevState: any, formData: FormData) {
     const { email, password } = validatedFields.data;
 
     try {
-        const usersRef = collection(db, "users");
-        const q = query(usersRef, where("email", "==", email));
-        const querySnapshot = await getDocs(q);
+        const usersRef = db.collection("users");
+        const q = usersRef.where("email", "==", email);
+        const querySnapshot = await q.get();
 
         if (!querySnapshot.empty) {
             return { error: { form: ['User with this email already exists'] } };
@@ -82,17 +89,18 @@ export async function register(prevState: any, formData: FormData) {
 
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const newUserDoc = await addDoc(usersRef, {
+        const newUserRef = usersRef.doc();
+        await newUserRef.set({
             email,
             password: hashedPassword,
         });
 
-        await createSession({ userId: newUserDoc.id, email: email });
-        redirect('/dashboard');
+        await createSession({ userId: newUserRef.id, email: email });
     } catch (error) {
         console.error("Registration error:", error);
         return { error: { form: ['An unexpected error occurred. Please try again.'] } };
     }
+    redirect('/dashboard');
 }
 
 
@@ -102,7 +110,7 @@ export async function logout() {
 }
 
 export async function signInWithGoogle() {
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
     console.error("Google OAuth credentials are not set in .env file.");
     throw new Error('Server configuration error: Google OAuth credentials are not set up.');
   }

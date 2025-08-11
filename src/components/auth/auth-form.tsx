@@ -1,6 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 import { login, register, signInWithGoogle } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,7 @@ function BrandIcon() {
 
 export default function AuthForm({ mode }: AuthFormProps) {
   const action = mode === 'login' ? login : register;
-  const [state, formAction] = useFormState(action, { error: null });
+  const [state, formAction] = useActionState(action, { error: null });
 
   return (
     <Card className="w-full max-w-md shadow-lg">

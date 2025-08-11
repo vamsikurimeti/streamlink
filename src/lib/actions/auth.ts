@@ -133,15 +133,18 @@ export async function logout() {
 
 export async function signInWithGoogle() {
   console.log("Initiating Google Sign-In...");
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
-    console.error("Google OAuth credentials are not set in .env file.");
+  const redirectUri = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI;
+  console.log(`Using Redirect URI: ${redirectUri}`);
+
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !redirectUri) {
+    console.error("Google OAuth credentials or Redirect URI are not set in .env file.");
     throw new Error('Server configuration error: Google OAuth credentials are not set up.');
   }
 
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI
+    redirectUri
   );
 
   const scopes = [
@@ -157,6 +160,6 @@ export async function signInWithGoogle() {
     prompt: 'consent',
   });
 
-  console.log("Redirecting to Google for authentication.");
+  console.log("Redirecting to Google for authentication at URL:", url);
   redirect(url);
 }

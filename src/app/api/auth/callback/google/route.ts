@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   }
   
   try {
-    console.log("Setting up Google OAuth2 client...");
+    console.log("Setting up Google OAuth2 client with redirect URI:", process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI);
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
         await userDoc.ref.update(updatedData);
     }
     
-    console.log("Creating session for the user...");
+    console.log("Creating session for the user with tokens...");
     await createSession({
         userId: userId,
         email: userInfo.email,

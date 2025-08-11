@@ -6,6 +6,7 @@ const SESSION_COOKIE_NAME = 'session';
 export interface Session {
   userId: string;
   email: string;
+  picture?: string | null;
   tokens?: Credentials;
 }
 

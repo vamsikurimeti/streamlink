@@ -55,29 +55,35 @@ export async function GET(request: NextRequest) {
     const querySnapshot = await q.get();
     
     let userId: string;
+    let userPicture: string | null | undefined;
 
     if (querySnapshot.empty) {
         const newUserRef = usersRef.doc();
-        await newUserRef.set({
+        const newUser = {
             email: userInfo.email,
             googleId: userInfo.id,
             name: userInfo.name,
             picture: userInfo.picture,
-        });
+        };
+        await newUserRef.set(newUser);
         userId = newUserRef.id;
+        userPicture = newUser.picture;
     } else {
-        userId = querySnapshot.docs[0].id;
-        // Optionally, update user info on re-login
-        await querySnapshot.docs[0].ref.update({
+        const userDoc = querySnapshot.docs[0];
+        userId = userDoc.id;
+        const updatedData = {
             googleId: userInfo.id,
             name: userInfo.name,
             picture: userInfo.picture,
-        });
+        };
+        await userDoc.ref.update(updatedData);
+        userPicture = updatedData.picture;
     }
     
     await createSession({
         userId: userId,
         email: userInfo.email,
+        picture: userPicture,
         tokens: tokens,
     });
 

@@ -53,7 +53,7 @@ export async function login(prevState: any, formData: FormData) {
       return { error: { form: ['Invalid email or password'] } };
     }
 
-    await createSession({ userId: userDoc.id, email: user.email });
+    await createSession({ userId: userDoc.id, email: user.email, picture: user.picture });
     
 
   } catch (error) {

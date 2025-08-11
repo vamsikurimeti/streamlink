@@ -52,7 +52,7 @@ export default function Header({ user }: { user: Session }) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">
               <Avatar>
-                <AvatarImage src={`https://placehold.co/40x40.png`} alt={user.email} data-ai-hint="user avatar" />
+                <AvatarImage src={user.picture || `https://placehold.co/40x40.png`} alt={user.email} data-ai-hint="user avatar" />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
             </Button>

@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { google } from 'googleapis';
 import { createSession } from '@/lib/auth';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -43,9 +46,27 @@ export async function GET(request: NextRequest) {
     if (!userInfo.email || !userInfo.id) {
         throw new Error("Failed to retrieve user information from Google.");
     }
+
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("email", "==", userInfo.email));
+    const querySnapshot = await getDocs(q);
+    
+    let userId: string;
+
+    if (querySnapshot.empty) {
+        const newUserDoc = await addDoc(usersRef, {
+            email: userInfo.email,
+            googleId: userInfo.id,
+            name: userInfo.name,
+            picture: userInfo.picture,
+        });
+        userId = newUserDoc.id;
+    } else {
+        userId = querySnapshot.docs[0].id;
+    }
     
     await createSession({
-        userId: userInfo.id,
+        userId: userId,
         email: userInfo.email,
         tokens: tokens,
     });

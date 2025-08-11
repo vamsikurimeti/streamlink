@@ -4,11 +4,9 @@ import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { createSession, deleteSession } from '@/lib/auth';
 import { google } from 'googleapis';
-
-// MOCK database of users
-const users = [
-  { id: '1', email: 'user@example.com', password: 'password123' }
-];
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import bcrypt from 'bcrypt';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -31,44 +29,72 @@ export async function login(prevState: any, formData: FormData) {
   
   const { email, password } = validatedFields.data;
 
-  // MOCK: In a real app, you'd check hashed password against DB
-  const user = users.find(u => u.email === email && u.password === password);
+  try {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("email", "==", email));
+    const querySnapshot = await getDocs(q);
 
-  if (!user) {
-    return {
-      error: { form: ['Invalid email or password'] },
-    };
+    if (querySnapshot.empty) {
+      return { error: { form: ['Invalid email or password'] } };
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const user = userDoc.data();
+
+    if (!user.password) {
+        return { error: { form: ['Please sign in with Google for this account.'] } };
+    }
+
+    const passwordsMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordsMatch) {
+      return { error: { form: ['Invalid email or password'] } };
+    }
+
+    await createSession({ userId: userDoc.id, email: user.email });
+    redirect('/dashboard');
+
+  } catch (error) {
+    console.error("Login error:", error);
+    return { error: { form: ['An unexpected error occurred. Please try again.'] } };
   }
-
-  await createSession({ userId: user.id, email: user.email });
-  redirect('/dashboard');
 }
 
 export async function register(prevState: any, formData: FormData) {
-  const validatedFields = registerSchema.safeParse(Object.fromEntries(formData.entries()));
+    const validatedFields = registerSchema.safeParse(Object.fromEntries(formData.entries()));
 
-  if (!validatedFields.success) {
-    return {
-      error: validatedFields.error.flatten().fieldErrors,
-    };
-  }
+    if (!validatedFields.success) {
+        return {
+        error: validatedFields.error.flatten().fieldErrors,
+        };
+    }
 
-  const { email, password } = validatedFields.data;
+    const { email, password } = validatedFields.data;
 
-  // MOCK: Check if user exists
-  if (users.find(u => u.email === email)) {
-    return {
-      error: { form: ['User with this email already exists'] },
-    };
-  }
+    try {
+        const usersRef = collection(db, "users");
+        const q = query(usersRef, where("email", "==", email));
+        const querySnapshot = await getDocs(q);
 
-  // MOCK: Create user
-  const newUser = { id: String(users.length + 1), email, password };
-  users.push(newUser);
+        if (!querySnapshot.empty) {
+            return { error: { form: ['User with this email already exists'] } };
+        }
 
-  await createSession({ userId: newUser.id, email: newUser.email });
-  redirect('/dashboard');
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUserDoc = await addDoc(usersRef, {
+            email,
+            password: hashedPassword,
+        });
+
+        await createSession({ userId: newUserDoc.id, email: email });
+        redirect('/dashboard');
+    } catch (error) {
+        console.error("Registration error:", error);
+        return { error: { form: ['An unexpected error occurred. Please try again.'] } };
+    }
 }
+
 
 export async function logout() {
   await deleteSession();

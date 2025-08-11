@@ -19,14 +19,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL('/login?error=oauth_failed', request.url));
   }
 
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
-    console.error("Google OAuth credentials are not set in .env file.");
-    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    console.error("Missing GOOGLE_CLIENT_ID in .env file.");
+    return NextResponse.redirect(new URL('/login?error=server_config_client_id', request.url));
+  }
+  if (!process.env.GOOGLE_CLIENT_SECRET) {
+    console.error("Missing GOOGLE_CLIENT_SECRET in .env file.");
+    return NextResponse.redirect(new URL('/login?error=server_config_client_secret', request.url));
+  }
+  if (!process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
+    console.error("Missing NEXT_PUBLIC_GOOGLE_REDIRECT_URI in .env file.");
+    return NextResponse.redirect(new URL('/login?error=server_config_redirect_uri', request.url));
   }
   
   if (!db) {
-    console.error("Firebase Admin SDK is not initialized. Check server logs.");
-    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
+    console.error("Firebase Admin SDK is not initialized. Check server logs for GOOGLE_APPLICATION_CREDENTIALS.");
+    return NextResponse.redirect(new URL('/login?error=server_config_firebase', request.url));
   }
   
   try {

@@ -60,6 +60,7 @@ export async function login(prevState: any, formData: FormData) {
     console.error("Login error:", error);
     return { error: { form: ['An unexpected error occurred. Please try again.'] } };
   }
+  
   redirect('/dashboard');
 }
 
@@ -99,6 +100,7 @@ export async function register(prevState: any, formData: FormData) {
         console.error("Registration error:", error);
         return { error: { form: ['An unexpected error occurred. Please try again.'] } };
     }
+
     redirect('/dashboard');
 }
 

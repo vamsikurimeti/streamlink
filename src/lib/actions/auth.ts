@@ -22,6 +22,7 @@ const registerSchema = z.object({
 
 export async function login(prevState: any, formData: FormData) {
   if (!db) {
+    console.error("Firebase Admin SDK is not initialized. Check server logs for GOOGLE_APPLICATION_CREDENTIALS.");
     return { error: { form: ['Server configuration error. Please contact support.'] } };
   }
   const validatedFields = loginSchema.safeParse(Object.fromEntries(formData.entries()));
@@ -68,6 +69,7 @@ export async function login(prevState: any, formData: FormData) {
 
 export async function register(prevState: any, formData: FormData) {
     if (!db) {
+        console.error("Firebase Admin SDK is not initialized. Check server logs for GOOGLE_APPLICATION_CREDENTIALS.");
         return { error: { form: ['Server configuration error. Please contact support.'] } };
     }
     const validatedFields = registerSchema.safeParse(Object.fromEntries(formData.entries()));

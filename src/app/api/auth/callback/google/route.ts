@@ -3,6 +3,9 @@ import type { NextRequest } from 'next/server';
 import { google } from 'googleapis';
 import { createSession } from '@/lib/auth';
 import { db } from '@/lib/firebase';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,20 +24,20 @@ export async function GET(request: NextRequest) {
 
   if (!process.env.GOOGLE_CLIENT_ID) {
     console.error("Missing GOOGLE_CLIENT_ID in .env file.");
-    return NextResponse.redirect(new URL('/login?error=server_config_client_id', request.url));
+    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   if (!process.env.GOOGLE_CLIENT_SECRET) {
     console.error("Missing GOOGLE_CLIENT_SECRET in .env file.");
-    return NextResponse.redirect(new URL('/login?error=server_config_client_secret', request.url));
+    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   if (!process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
     console.error("Missing NEXT_PUBLIC_GOOGLE_REDIRECT_URI in .env file.");
-    return NextResponse.redirect(new URL('/login?error=server_config_redirect_uri', request.url));
+    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   
   if (!db) {
     console.error("Firebase Admin SDK is not initialized. Check server logs for GOOGLE_APPLICATION_CREDENTIALS.");
-    return NextResponse.redirect(new URL('/login?error=server_config_firebase', request.url));
+    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   
   try {

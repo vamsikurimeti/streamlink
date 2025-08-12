@@ -1,5 +1,6 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+/angularfirebase-vamsi-a62c7e540fe1.json
 # dependencies
 /node_modules
 /.pnp

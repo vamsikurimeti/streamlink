@@ -24,24 +24,36 @@ let db: Firestore | null = null;
 try {
   const serviceAccountCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
   if (!serviceAccountCreds) {
-    console.warn("WARNING: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Server-side Firebase features will be disabled.");
-  } else {
-    if (getApps().length === 0) {
-      console.log("Initializing Firebase Admin SDK...");
-      const serviceAccount = JSON.parse(Buffer.from(serviceAccountCreds, 'base64').toString('utf8'));
-      adminApp = initializeApp({
-        credential: cert(serviceAccount),
-      });
-    } else {
-      console.log("Using existing Firebase Admin SDK app.");
-      adminApp = getApp();
-    }
-    db = getFirestore(adminApp);
-    console.log("Firebase Admin SDK initialized and Firestore is available.");
+    throw new Error(
+      "GOOGLE_APPLICATION_CREDENTIALS is not set. " +
+      "Please create a .env file and add your Firebase service account credentials. " +
+      "See .env.example for more details."
+    );
   }
-} catch (error) {
-  console.error('CRITICAL: Firebase Admin SDK initialization error. Please check the GOOGLE_APPLICATION_CREDENTIALS environment variable.');
-  console.error('Full error:', error);
+
+  if (getApps().length === 0) {
+    console.log("Initializing Firebase Admin SDK...");
+    const serviceAccount = JSON.parse(
+      Buffer.from(serviceAccountCreds, 'base64').toString('utf8')
+    );
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+    });
+  } else {
+    console.log("Using existing Firebase Admin SDK app.");
+    adminApp = getApp();
+  }
+  db = getFirestore(adminApp);
+  console.log("Firebase Admin SDK initialized and Firestore is available.");
+
+} catch (error: any) {
+  console.error('CRITICAL: Firebase Admin SDK initialization error.');
+  console.error('Full error:', error.message);
+  // Re-throw the error to make it clear that the server cannot start without proper config
+  throw new Error(
+    `Firebase Admin SDK failed to initialize: ${error.message}. ` +
+    `Please check your GOOGLE_APPLICATION_CREDENTIALS in your .env file.`
+  );
 }
 
 export { clientApp, clientDb, db };

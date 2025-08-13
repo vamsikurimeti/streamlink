@@ -1,8 +1,9 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth';
 import GoLiveCard from '@/components/dashboard/go-live-card';
 import VideoHistory from '@/components/dashboard/video-history';
-import DashboardLayoutWrapper from './layout';
+import DashboardLayoutWrapper from './dashboard-client-wrapper';
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -11,9 +12,11 @@ export default async function DashboardPage() {
   }
 
   return (
-    <DashboardLayoutWrapper session={session}>
-      <GoLiveCard />
-      <VideoHistory />
-    </DashboardLayoutWrapper>
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardLayoutWrapper session={session}>
+        <GoLiveCard />
+        <VideoHistory />
+      </DashboardLayoutWrapper>
+    </Suspense>
   );
 }

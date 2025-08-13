@@ -17,31 +17,31 @@ const clientConfig = {
 const clientApp = !getClientApps().length ? initializeClientApp(clientConfig) : getClientApp();
 const clientDb = getClientFirestore(clientApp);
 
-
 // Server-side Firebase Admin SDK configuration
 let adminApp: App;
 let db: Firestore | null = null;
 
 try {
-    const serviceAccountString = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    if (!serviceAccountString) {
-        console.warn("WARNING: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Server-side Firebase features will be disabled.");
+  const serviceAccountCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  if (!serviceAccountCreds) {
+    console.warn("WARNING: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. Server-side Firebase features will be disabled.");
+  } else {
+    if (getApps().length === 0) {
+      console.log("Initializing Firebase Admin SDK...");
+      const serviceAccount = JSON.parse(Buffer.from(serviceAccountCreds, 'base64').toString('utf8'));
+      adminApp = initializeApp({
+        credential: cert(serviceAccount),
+      });
     } else {
-        const serviceAccount = JSON.parse(serviceAccountString);
-        if (!getApps().length) {
-            console.log("Initializing Firebase Admin SDK...");
-            adminApp = initializeApp({
-                credential: cert(serviceAccount),
-            });
-        } else {
-            console.log("Using existing Firebase Admin SDK app.");
-            adminApp = getApp();
-        }
-        db = getFirestore(adminApp);
-        console.log("Firebase Admin SDK initialized and Firestore is available.");
+      console.log("Using existing Firebase Admin SDK app.");
+      adminApp = getApp();
     }
-} catch (error: any) {
-    console.error('CRITICAL: Firebase Admin SDK initialization error:', error.message);
+    db = getFirestore(adminApp);
+    console.log("Firebase Admin SDK initialized and Firestore is available.");
+  }
+} catch (error) {
+  console.error('CRITICAL: Firebase Admin SDK initialization error. Please check the GOOGLE_APPLICATION_CREDENTIALS environment variable.');
+  console.error('Full error:', error);
 }
 
 export { clientApp, clientDb, db };

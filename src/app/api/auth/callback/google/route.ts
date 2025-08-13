@@ -91,7 +91,8 @@ export async function GET(request: NextRequest) {
     }
     
     console.log("Creating session for the user with tokens...");
-    await createSession({
+    const response = NextResponse.redirect(new URL('/dashboard?success=true', request.url));
+    createSession(response, {
         userId: userId,
         email: userInfo.email,
         picture: userPicture,
@@ -100,7 +101,7 @@ export async function GET(request: NextRequest) {
     console.log("Session created successfully.");
 
     console.log("Redirecting to dashboard...");
-    return NextResponse.redirect(new URL('/dashboard?success=true', request.url));
+    return response;
   } catch (err: any) {
     console.error('Failed to process Google OAuth callback:', err.message);
     const errorMessage = err.response?.data?.error || 'token_exchange_failed';

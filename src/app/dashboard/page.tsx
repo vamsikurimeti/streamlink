@@ -13,9 +13,8 @@ export default async function DashboardPage() {
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <DashboardLayoutWrapper session={session}>
+      <DashboardLayoutWrapper session={session} videoHistory={<VideoHistory />}>
         <GoLiveCard />
-        <VideoHistory />
       </DashboardLayoutWrapper>
     </Suspense>
   );

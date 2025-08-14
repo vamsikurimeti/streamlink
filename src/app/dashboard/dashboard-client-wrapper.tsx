@@ -48,7 +48,15 @@ import Header from '@/components/dashboard/header';
 import type { Session } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
-export default function DashboardLayoutWrapper({ children, session }: { children: ReactNode, session: Session | null }) {
+export default function DashboardLayoutWrapper({
+  children,
+  session,
+  videoHistory,
+}: {
+  children: ReactNode;
+  session: Session | null;
+  videoHistory: ReactNode;
+}) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -86,6 +94,7 @@ export default function DashboardLayoutWrapper({ children, session }: { children
       <Header user={session} />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         {children}
+        {videoHistory}
       </main>
     </div>
   );

@@ -110,7 +110,6 @@ export async function getVideoHistory(): Promise<Video[]> {
       part: ['snippet'],
       forMine: true,
       type: ['video'],
-      eventType: 'completed',
       maxResults: 20,
     });
 

@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
     }
   } else {
     if (pathname.startsWith('/dashboard')) {
-      return NextResponse.redirect(new URL('/login', request.url));
+      return NextResponse.redirect(new URL('/dashboard', request.url));
     }
   }
 

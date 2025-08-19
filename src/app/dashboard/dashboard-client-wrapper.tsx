@@ -48,7 +48,7 @@ import Header from '@/components/dashboard/header';
 import type { Session } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 
-export default function DashboardLayoutWrapper({
+export default function DashboardClientWrapper({
   children,
   session,
   videoHistory,

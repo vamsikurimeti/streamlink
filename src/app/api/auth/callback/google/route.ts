@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { google } from 'googleapis';
 import { createSession } from '@/lib/auth';
 import { db } from '@/lib/firebase';
+import { oauth2Client } from '@/lib/google-auth';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,24 +22,14 @@ export async function GET(request: NextRequest) {
   
   console.log("Received OAuth callback with authorization code.");
 
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI) {
-    console.error("CRITICAL: Missing Google OAuth environment variables.");
-    return NextResponse.redirect(new URL('/login?error=server_config', request.url));
-  }
-  
   if (!db) {
     console.error("CRITICAL: Firebase Admin SDK is not initialized. Check server logs for GOOGLE_APPLICATION_CREDENTIALS.");
     return NextResponse.redirect(new URL('/login?error=server_config', request.url));
   }
   
   try {
-    console.log("Setting up Google OAuth2 client with redirect URI:", process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI);
-    const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI
-    );
-
+    // The oauth2Client is now imported from a central configuration file.
+    // Environment variables are checked there, so no need to repeat here.
     console.log("Exchanging authorization code for tokens...");
     const { tokens } = await oauth2Client.getToken(code);
     oauth2Client.setCredentials(tokens);

@@ -3,9 +3,9 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { createSession, deleteSession } from '@/lib/auth';
-import { google } from 'googleapis';
 import { db } from '@/lib/firebase';
 import bcrypt from 'bcrypt';
+import { oauth2Client, scopes } from '@/lib/google-auth';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -133,30 +133,12 @@ export async function logout() {
 
 export async function signInWithGoogle() {
   console.log("Initiating Google Sign-In...");
-  const redirectUri = process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI;
-  console.log(`Using Redirect URI: ${redirectUri}`);
 
-  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET || !redirectUri) {
-    console.error("Google OAuth credentials or Redirect URI are not set in .env file.");
-    throw new Error('Server configuration error: Google OAuth credentials are not set up.');
-  }
-
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    redirectUri
-  );
-
-  const scopes = [
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/youtube',
-    'https://www.googleapis.com/auth/youtube.readonly',
-  ];
-
+  // The oauth2Client is now imported from a central configuration file.
+  // It is pre-configured with the client ID, secret, and redirect URI.
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: scopes,
+    scope: scopes, // Scopes are also imported from the central config.
     prompt: 'consent',
   });
 
